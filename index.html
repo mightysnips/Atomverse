@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtomVerse - 3D Periodic Table Explorer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>⚛️ AtomVerse</h1>
+                <p class="tagline">Interactive 3D Periodic Table Explorer</p>
+            </div>
+            <div class="header-controls">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-bar" 
+                        placeholder="Search by name or symbol..."
+                    >
+                    <span class="search-icon">🔍</span>
+                </div>
+                <button id="researchModeBtn" class="research-toggle">
+                    <span class="toggle-icon">🔬</span>
+                    Research Mode
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar: Category Filters -->
+        <aside class="sidebar">
+            <div class="filters-section">
+                <h3>Categories</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-category="all">All Elements</button>
+                    <button class="filter-btn" data-category="alkali-metals">Alkali Metals</button>
+                    <button class="filter-btn" data-category="alkaline-earth">Alkaline Earth</button>
+                    <button class="filter-btn" data-category="transition-metals">Transition Metals</button>
+                    <button class="filter-btn" data-category="lanthanides">Lanthanides</button>
+                    <button class="filter-btn" data-category="actinides">Actinides</button>
+                    <button class="filter-btn" data-category="other-metals">Other Metals</button>
+                    <button class="filter-btn" data-category="semimetals">Semimetals</button>
+                    <button class="filter-btn" data-category="nonmetals">Nonmetals</button>
+                    <button class="filter-btn" data-category="halogens">Halogens</button>
+                    <button class="filter-btn" data-category="noble-gases">Noble Gases</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Periodic Table Section -->
+            <section class="periodic-section">
+                <h2>Interactive Periodic Table</h2>
+                <div class="periodic-grid" id="periodicGrid">
+                    <!-- Elements will be generated here by JavaScript -->
+                </div>
+                <div class="legend-grid">
+                    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b"></span> Alkali metals</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#ffb86b"></span> Alkaline earth metals</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#ffd700"></span> Transition metals</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#9d4edd"></span> Post-transition metals</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#7ef5a1"></span> Metalloids</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#9fd3ff"></span> Reactive non-metals</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#9bff9b"></span> Halogens</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#caa6ff"></span> Noble gases</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#81ecec"></span> Lanthanides</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#fab1a0"></span> Actinides</div>
+                </div>
+                <section class="research-section" id="researchSection" aria-live="polite">
+                    <div class="research-header">
+                        <div>
+                            <h2>Research Mode</h2>
+                            <p>Browse the latest element discoveries and research highlights for selected atoms.</p>
+                        </div>
+                        <div class="research-status" id="researchStatus">Research mode is off. Click the button above to begin.</div>
+                    </div>
+                    <div class="research-cards" id="researchCards"></div>
+                </section>
+            </section>
+        </main>
+
+        <!-- 3D Viewer Panel (Overlay) -->
+        <div class="viewer-panel" id="viewerPanel">
+            <button class="close-btn" id="closePanel">✕</button>
+            
+            <div class="viewer-content">
+                <!-- 3D Canvas -->
+                <div class="canvas-container">
+                    <div id="canvasWrapper" class="canvas-wrapper">
+                        <canvas id="threejsCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Element Info Panel -->
+                <div class="info-panel">
+                    <div class="info-header">
+                        <h3 class="element-name" id="elementName">Hydrogen</h3>
+                        <span class="element-symbol" id="elementSymbol">H</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Atomic Number</label>
+                            <value id="atomicNumber">1</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Atomic Mass</label>
+                            <value id="atomicMass">1.008</value>
+                        </div>
+                        <div class="info-item">
+                            <label>State (25°C)</label>
+                            <value id="state">Gas</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Category</label>
+                            <value id="category">Nonmetal</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Electronegativity</label>
+                            <value id="electronegativity">2.20</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Ionization Energy</label>
+                            <value id="ionizationEnergy">13.6 eV</value>
+                        </div>
+                        <div class="info-item structure-action">
+                            <label>Electron Configuration</label>
+                            <value id="electronConfig">1s¹</value>
+                            <button id="structureViewBtn" class="structure-btn">View Atomic Structure</button>
+                        </div>
+                        <div class="info-item">
+                            <label>Discovered</label>
+                            <value id="discoveredBy">Cavendish (1766)</value>
+                        </div>
+                    </div>
+
+                    <div class="description-section">
+                        <h4>Description</h4>
+                        <p id="description">Hydrogen is the lightest element and the most abundant in the universe.</p>
+                    </div>
+
+                    <div class="research-info" id="researchInfo" style="display: none;">
+                        <h4>📊 Research Data</h4>
+                        <div class="research-details">
+                            <div class="research-item">
+                                <label>Electron Velocity (1s)</label>
+                                <value id="electronVelocity">2,200 km/s</value>
+                            </div>
+                            <div class="research-item">
+                                <label>Orbital Shells</label>
+                                <value id="orbitalShells">K</value>
+                            </div>
+                            <div class="research-item">
+                                <label>Relativistic Effects</label>
+                                <value id="relativisticNote">Minimal for light elements</value>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Atomic Structure Overlay -->
+    <div class="structure-overlay" id="structureOverlay">
+        <button class="close-btn close-structure-btn" id="closeStructure">✕</button>
+        <div class="structure-shell-panel">
+            <div class="structure-header">
+                <div class="structure-header-main">
+                    <h2 id="structureTitle">Atomic Structure</h2>
+                    <p id="structureSubtitle">Live 3D orbital model and shell organization.</p>
+                </div>
+                <button id="subatomicViewBtn" class="structure-btn subatomic-btn">Subatomic View</button>
+            </div>
+            <div class="subatomic-info-panel" id="subatomicInfoPanel" style="display:none;">
+                <div class="subatomic-info-title">Particle Detail</div>
+                <div class="subatomic-info-detail" id="subatomicInfoDetail">Hover over an electron, proton, or neutron to inspect its internal structure.</div>
+            </div>
+            <div class="structure-canvas-wrapper">
+                <canvas id="structureCanvas"></canvas>
+            </div>
+            <div class="structure-info">
+                <div class="structure-meta">
+                    <span id="structureElementLabel">Element:</span>
+                    <strong id="structureElementName">Hydrogen</strong>
+                </div>
+                <div class="structure-meta">
+                    <span>Shells:</span>
+                    <strong id="structureShells">1</strong>
+                </div>
+                <div class="structure-meta">
+                    <span>Orbitals:</span>
+                    <strong id="structureOrbitals">K</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="spinner"></div>
+        <p>Initializing AtomVerse...</p>
+    </div>
+
+    <!-- Three.js + GSAP from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Element data (full) -->
+    <script src="elements_full.js"></script>
+    <script src="data.js"></script>
+    <script src="elements_adapter.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -23,8 +23,12 @@ class AtomVerse {
         this.subatomicGroup = null;
         this.subatomicMode = false;
         this.subatomicMeshes = [];
+        this.subatomicGroups = [];
+        this.subatomicExploded = {};
+        this.subatomicLabelSprite = null;
         this.subatomicHoverTarget = null;
         this.subatomicHoverListener = null;
+        this.subatomicClickListener = null;
         this.subatomicLeaveListener = null;
         this.subatomicInfoPanel = null;
         this.raycaster = new THREE.Raycaster();
@@ -318,9 +322,14 @@ class AtomVerse {
             if (this.subatomicLeaveListener) {
                 this.structureCanvas.removeEventListener('mouseleave', this.subatomicLeaveListener);
             }
+            if (this.subatomicClickListener) {
+                this.structureCanvas.removeEventListener('pointerdown', this.subatomicClickListener);
+            }
             this.subatomicHoverListener = (e) => this.handleStructurePointerMove(e);
+            this.subatomicClickListener = (e) => this.handleStructurePointerClick(e);
             this.subatomicLeaveListener = () => this.clearSubatomicHover();
             this.structureCanvas.addEventListener('mousemove', this.subatomicHoverListener);
+            this.structureCanvas.addEventListener('pointerdown', this.subatomicClickListener);
             this.structureCanvas.addEventListener('mouseleave', this.subatomicLeaveListener);
         }
 
@@ -361,9 +370,17 @@ class AtomVerse {
             this.structureCanvas.removeEventListener('mousemove', this.subatomicHoverListener);
             this.subatomicHoverListener = null;
         }
+        if (this.structureCanvas && this.subatomicClickListener) {
+            this.structureCanvas.removeEventListener('pointerdown', this.subatomicClickListener);
+            this.subatomicClickListener = null;
+        }
         if (this.structureCanvas && this.subatomicLeaveListener) {
             this.structureCanvas.removeEventListener('mouseleave', this.subatomicLeaveListener);
             this.subatomicLeaveListener = null;
+        }
+        if (this.subatomicLabelSprite && this.structureScene) {
+            this.structureScene.remove(this.subatomicLabelSprite);
+            this.subatomicLabelSprite = null;
         }
         if (this.structureRenderer) {
             this.structureRenderer.dispose();
@@ -590,7 +607,15 @@ class AtomVerse {
             }
         });
 
-        this.structureGroup.rotation.z += 0.0006;
+        if (!this.subatomicMode) {
+            this.structureGroup.rotation.z += 0.0006;
+        } else if (this.subatomicGroups && this.subatomicGroups.length) {
+            this.subatomicGroups.forEach((group, index) => {
+                group.rotation.x += 0.0009 + index * 0.0003;
+                group.rotation.y += 0.0011 + index * 0.0002;
+            });
+        }
+
         if (this.structureRenderer && this.structureCamera) {
             this.structureRenderer.render(this.structureScene, this.structureCamera);
         }
@@ -610,6 +635,10 @@ class AtomVerse {
         } else {
             if (btn) btn.textContent = 'Subatomic View';
             if (infoPanel) infoPanel.style.display = 'none';
+            if (this.subatomicLabelSprite && this.structureScene) {
+                this.structureScene.remove(this.subatomicLabelSprite);
+                this.subatomicLabelSprite = null;
+            }
             this.updateStructureOverlayInfo(this.activeStructureElement);
             this.createStructureVisualization(this.activeStructureElement);
         }
@@ -619,29 +648,31 @@ class AtomVerse {
         if (!this.structureGroup) return;
         this.structureGroup.clear();
         this.subatomicMeshes = [];
+        this.subatomicGroups = [];
+        this.subatomicExploded = {};
         this.subatomicHoverTarget = null;
 
         const particleDefinitions = [
             {
                 type: 'electron',
                 color: 0x5ce1e6,
-                position: [-26, 0, 0],
+                position: [-18, 0, 0],
                 label: 'Electron',
-                detail: 'A fundamental lepton. This model highlights the electron cloud, energy shell, and inner energy packet.'
+                detail: 'A fundamental lepton. Click to explore its energy core and wave structure.'
             },
             {
                 type: 'proton',
                 color: 0xff6eb0,
-                position: [24, 12, 0],
+                position: [14, 8, 0],
                 label: 'Proton',
-                detail: 'A baryon made of two up quarks and one down quark, bound by gluons inside the nucleus.'
+                detail: 'A baryon made of two up quarks and one down quark. Click to reveal the inner quark structure.'
             },
             {
                 type: 'neutron',
                 color: 0x7e88ff,
-                position: [24, -12, 0],
+                position: [14, -8, 0],
                 label: 'Neutron',
-                detail: 'A baryon made of one up quark and two down quarks, giving the nucleus mass without net charge.'
+                detail: 'A baryon made of one up quark and two down quarks. Click to reveal the inner quark structure.'
             }
         ];
 
@@ -650,17 +681,9 @@ class AtomVerse {
 
         particleDefinitions.forEach(def => {
             const particle = this.createParticleStructure(def);
+            this.subatomicGroups.push(particle);
             this.subatomicGroup.add(particle);
         });
-
-        const centralLabel = this.createTextSprite('Subatomic Chart', {
-            color: '#a8f0ff',
-            backgroundColor: 'rgba(0,0,0,0)',
-            fontSize: 28,
-            padding: 8
-        });
-        centralLabel.position.set(0, 34, 0);
-        this.subatomicGroup.add(centralLabel);
 
         this.subatomicHoverTarget = null;
         this.structuralRotation = 0;
@@ -670,105 +693,245 @@ class AtomVerse {
         const group = new THREE.Group();
         group.position.set(def.position[0], def.position[1], def.position[2]);
 
-        const outerRadius = def.type === 'electron' ? 10 : 12;
+        const outerRadius = def.type === 'electron' ? 6 : 8;
         const outer = new THREE.Mesh(
-            new THREE.SphereGeometry(outerRadius, 32, 32),
+            new THREE.SphereGeometry(outerRadius, 24, 24),
             new THREE.MeshPhysicalMaterial({
                 color: def.color,
                 transparent: true,
-                opacity: 0.16,
-                roughness: 0.3,
-                metalness: 0.1,
-                clearcoat: 0.6,
-                clearcoatRoughness: 0.3
+                opacity: 0.18,
+                roughness: 0.28,
+                metalness: 0.08,
+                clearcoat: 0.75,
+                clearcoatRoughness: 0.25
             })
         );
         outer.userData = {
             title: def.label,
-            info: def.detail
+            info: def.detail,
+            parentParticle: def.type,
+            clickable: true
         };
         group.add(outer);
         this.subatomicMeshes.push(outer);
 
-        if (def.type === 'electron') {
-            const core = new THREE.Mesh(
-                new THREE.SphereGeometry(2.2, 20, 20),
-                new THREE.MeshStandardMaterial({
-                    color: 0x94f7ff,
-                    emissive: 0x94f7ff,
-                    emissiveIntensity: 0.72,
-                    roughness: 0.2,
-                    metalness: 0.5
-                })
-            );
-            core.position.set(0, 0, 0);
-            core.userData = {
-                title: 'Electron Core',
-                info: 'The electron is represented as a concentrated energy packet with a surrounding cloud.'
-            };
-            group.add(core);
-            this.subatomicMeshes.push(core);
+        const internals = new THREE.Group();
+        internals.visible = false;
+        group.add(internals);
 
-            const ring = new THREE.LineLoop(
-                new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(
-                    new Array(64).fill(0).flatMap((_, i) => {
-                        const angle = (i / 64) * Math.PI * 2;
-                        return [Math.cos(angle) * (outerRadius + 1.5), Math.sin(angle) * (outerRadius + 1.5), 0];
-                    }),
-                    3
-                )),
-                new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.18 })
-            );
+        if (def.type === 'electron') {
+            this.buildElectronInternals(internals, def);
+            const ring = this.createOrbitRing(outerRadius + 1.4, def.color, 0.16);
             group.add(ring);
         } else {
-            const quarkPositions = [
-                [0, 4, 0],
-                [-3.8, -2.8, 0],
-                [3.8, -2.8, 0]
-            ];
-            const quarkColors = def.type === 'proton'
-                ? [0xffc1d8, 0xffc1d8, 0xa832ff]
-                : [0xffc1d8, 0xa832ff, 0xa832ff];
-            const quarkLabels = def.type === 'proton'
-                ? ['Up Quark', 'Up Quark', 'Down Quark']
-                : ['Up Quark', 'Down Quark', 'Down Quark'];
-
-            quarkPositions.forEach((pos, index) => {
-                const quark = new THREE.Mesh(
-                    new THREE.SphereGeometry(2.8, 20, 20),
-                    new THREE.MeshStandardMaterial({
-                        color: quarkColors[index],
-                        emissive: quarkColors[index],
-                        emissiveIntensity: 0.6,
-                        roughness: 0.25,
-                        metalness: 0.3
-                    })
-                );
-                quark.position.set(pos[0], pos[1], pos[2]);
-                quark.userData = {
-                    title: `${quarkLabels[index]} (${def.label})`, 
-                    info: `This is a ${quarkLabels[index].toLowerCase()} inside the ${def.label.toLowerCase()}, bound by gluons.`
-                };
-                group.add(quark);
-                this.subatomicMeshes.push(quark);
-            });
+            this.buildBaryonInternals(internals, def);
         }
 
-        const label = this.createTextSprite(def.label, {
-            color: '#b6f3ff',
-            backgroundColor: 'rgba(0,0,0,0)',
-            fontSize: 26,
-            padding: 8
-        });
-        label.position.set(0, outerRadius + 3.5, 0);
-        group.add(label);
-
         group.userData = {
+            particleType: def.type,
             title: def.label,
-            info: def.detail
+            info: def.detail,
+            outerMesh: outer,
+            internals: internals
         };
 
         return group;
+    }
+
+    buildElectronInternals(container, def) {
+        const glowColor = new THREE.Color(0x94f7ff);
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const fragment = new THREE.Mesh(
+                new THREE.SphereGeometry(1.1, 18, 18),
+                new THREE.MeshStandardMaterial({
+                    color: 0x9dffff,
+                    emissive: glowColor,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.15,
+                    metalness: 0.5,
+                    transparent: true,
+                    opacity: 0.0
+                })
+            );
+            fragment.position.set(Math.cos(angle) * 4.2, Math.sin(angle) * 4.2, 0);
+            fragment.userData = {
+                title: `Electron Wavelet ${i + 1}`,
+                info: 'A glowing energy packet from the electron cloud, showing its quantum structure.'
+            };
+            fragment.visible = false;
+            container.add(fragment);
+            this.subatomicMeshes.push(fragment);
+        }
+
+        const core = new THREE.Mesh(
+            new THREE.SphereGeometry(2.4, 24, 24),
+            new THREE.MeshStandardMaterial({
+                color: 0x66f2ff,
+                emissive: 0x66f2ff,
+                emissiveIntensity: 0.9,
+                roughness: 0.12,
+                metalness: 0.6,
+                transparent: true,
+                opacity: 0.0
+            })
+        );
+        core.userData = {
+            title: 'Electron Energy Core',
+            info: 'The electron viewed as a compact, glowing energy focus after the outer shell collapses.'
+        };
+        core.visible = false;
+        container.add(core);
+        this.subatomicMeshes.push(core);
+    }
+
+    buildBaryonInternals(container, def) {
+        const quarkOffsets = [
+            [0, 4, 0],
+            [-3.2, -3.2, 0],
+            [3.2, -3.2, 0]
+        ];
+        const quarkColors = def.type === 'proton'
+            ? [0xff9ec9, 0xff9ec9, 0xa54dff]
+            : [0xff9ec9, 0xa54dff, 0xa54dff];
+        const quarkLabels = def.type === 'proton'
+            ? ['Up Quark', 'Up Quark', 'Down Quark']
+            : ['Up Quark', 'Down Quark', 'Down Quark'];
+
+        quarkOffsets.forEach((pos, index) => {
+            const quark = new THREE.Mesh(
+                new THREE.SphereGeometry(2.4, 20, 20),
+                new THREE.MeshStandardMaterial({
+                    color: quarkColors[index],
+                    emissive: quarkColors[index],
+                    emissiveIntensity: 0.85,
+                    roughness: 0.18,
+                    metalness: 0.4,
+                    transparent: true,
+                    opacity: 0.0
+                })
+            );
+            quark.position.set(pos[0], pos[1], pos[2]);
+            quark.userData = {
+                title: `${quarkLabels[index]} (${def.label})`, 
+                info: `A glowing ${quarkLabels[index].toLowerCase()} inside the ${def.label.toLowerCase()} that becomes visible after expansion.`
+            };
+            quark.visible = false;
+            container.add(quark);
+            this.subatomicMeshes.push(quark);
+        });
+    }
+
+    createOrbitRing(radius, color, opacity = 0.16) {
+        const ring = new THREE.LineLoop(
+            new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(
+                new Array(64).fill(0).flatMap((_, i) => {
+                    const angle = (i / 64) * Math.PI * 2;
+                    return [Math.cos(angle) * radius, Math.sin(angle) * radius, 0];
+                }),
+                3
+            )),
+            new THREE.LineBasicMaterial({ color, transparent: true, opacity })
+        );
+        return ring;
+    }
+
+    handleStructurePointerClick(event) {
+        if (!this.subatomicMode || !this.structureCanvas) return;
+        const rect = this.structureCanvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        this.raycaster.setFromCamera(this.mouse, this.structureCamera);
+        const intersects = this.raycaster.intersectObjects(this.subatomicMeshes, true);
+        if (intersects.length) {
+            const hit = intersects[0].object;
+            const particleGroup = this.findParentParticleGroup(hit);
+            if (particleGroup) {
+                this.explodeParticleGroup(particleGroup);
+            }
+        }
+    }
+
+    findParentParticleGroup(object) {
+        let current = object;
+        while (current) {
+            if (current.userData && current.userData.particleType) {
+                return current;
+            }
+            current = current.parent;
+        }
+        return null;
+    }
+
+    explodeParticleGroup(group) {
+        if (!group || !group.userData || this.subatomicExploded[group.userData.particleType]) {
+            return;
+        }
+        const type = group.userData.particleType;
+        const outer = group.userData.outerMesh;
+        const internals = group.userData.internals;
+        if (!outer || !internals) return;
+
+        this.subatomicExploded[type] = true;
+        if (internals && !internals.visible) {
+            internals.visible = true;
+        }
+
+        if (typeof gsap !== 'undefined') {
+            const timeline = gsap.timeline();
+            timeline.to(outer.scale, { x: 1.8, y: 1.8, z: 1.8, duration: 0.45, ease: 'power2.out' }, 0);
+            if (outer.material) {
+                timeline.to(outer.material, { opacity: 0, duration: 0.45, ease: 'power2.out' }, 0);
+            }
+
+            internals.children.forEach((child, index) => {
+                const delay = 0.25 + index * 0.05;
+                child.visible = true;
+                if (child.material) {
+                    child.material.opacity = 0;
+                }
+                child.scale.set(0.3, 0.3, 0.3);
+                timeline.to(child.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: 'back.out(2)', delay }, 0);
+                if (child.material) {
+                    timeline.to(child.material, { opacity: 1, duration: 0.35, ease: 'power1.out', delay }, 0);
+                }
+            });
+
+            if (type === 'electron') {
+                timeline.to(group.rotation, { z: Math.PI * 0.6, duration: 0.8, ease: 'power2.out' }, 0);
+            } else {
+                timeline.to(group.rotation, { y: Math.PI * 0.9, duration: 0.8, ease: 'power2.out' }, 0);
+            }
+        } else {
+            outer.visible = false;
+            internals.children.forEach(child => child.visible = true);
+        }
+
+        const title = `${group.userData.title} Expanded`;
+        const info = `You have expanded the ${group.userData.title.toLowerCase()}.
+Hover its glowing internals to inspect each subatomic particle.`;
+        this.updateSubatomicInfo(title, info);
+    }
+
+    handleStructurePointerMove(event) {
+        if (!this.subatomicMode || !this.structureCanvas) return;
+        const rect = this.structureCanvas.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        this.raycaster.setFromCamera(this.mouse, this.structureCamera);
+        const intersects = this.raycaster.intersectObjects(this.subatomicMeshes, true);
+        if (intersects.length) {
+            const hit = intersects[0].object;
+            const data = hit.userData || hit.object?.userData;
+            if (data && data.title && data.info) {
+                this.updateSubatomicInfo(data.title, data.info);
+                this.highlightSubatomicObject(hit);
+                return;
+            }
+        }
+        this.clearSubatomicHover();
     }
 
     handleStructurePointerMove(event) {

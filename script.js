@@ -658,7 +658,7 @@ class AtomVerse {
                 color: 0x5ce1e6,
                 position: [-18, 0, 0],
                 label: 'Electron',
-                detail: 'A fundamental lepton that exists as a sine-cosine waveform packet. Click to reveal the wave structure inside the electron.'
+                detail: 'A fundamental lepton that exists as a sine-cosine waveform packet, following de Broglie matter-wave principles. Click to reveal the wave structure inside the electron.'
             },
             {
                 type: 'proton',
@@ -740,20 +740,24 @@ class AtomVerse {
 
     buildElectronInternals(container, def) {
         const glowColor = new THREE.Color(0x94f7ff);
-        const waveformCount = 22;
-        const waveAmplitude = 2.4;
-        const waveSpacing = 0.5;
+        const waveformCount = 30;
+        const waveAmplitude = 4.2;
+        const waveSpacing = 0.8;
+        const wavePoints = [];
+
         for (let i = 0; i < waveformCount; i++) {
-            const t = i * 0.25;
+            const t = i * 0.35;
             const x = (i - (waveformCount - 1) / 2) * waveSpacing;
-            const y = Math.sin(t * 1.4) * waveAmplitude;
-            const z = Math.cos(t * 1.4) * waveAmplitude * 0.35;
+            const y = Math.sin(t) * waveAmplitude;
+            const z = Math.cos(t * 0.7) * 1.8;
+            wavePoints.push(new THREE.Vector3(x, y, z));
+
             const segment = new THREE.Mesh(
-                new THREE.SphereGeometry(0.55, 12, 12),
+                new THREE.SphereGeometry(0.9, 16, 16),
                 new THREE.MeshStandardMaterial({
                     color: 0x8cffff,
                     emissive: glowColor,
-                    emissiveIntensity: 0.75,
+                    emissiveIntensity: 0.85,
                     roughness: 0.12,
                     metalness: 0.3,
                     transparent: true,
@@ -763,19 +767,36 @@ class AtomVerse {
             segment.position.set(x, y, z);
             segment.userData = {
                 title: `Electron Wave Phase ${i + 1}`,
-                info: 'A sine-cosine waveform segment representing the electron wave packet inside the electron shell.'
+                info: this.getElectronWaveInfo()
             };
             segment.visible = false;
             container.add(segment);
             this.subatomicMeshes.push(segment);
         }
 
+        const waveGeometry = new THREE.BufferGeometry().setFromPoints(wavePoints);
+        const waveLine = new THREE.Line(
+            waveGeometry,
+            new THREE.LineBasicMaterial({
+                color: 0x8cffff,
+                transparent: true,
+                opacity: 0.9
+            })
+        );
+        waveLine.userData = {
+            title: 'Electron Waveform',
+            info: this.getElectronWaveInfo()
+        };
+        waveLine.visible = false;
+        container.add(waveLine);
+        this.subatomicMeshes.push(waveLine);
+
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(2.2, 28, 28),
+            new THREE.SphereGeometry(3.0, 32, 32),
             new THREE.MeshStandardMaterial({
                 color: 0x66f2ff,
                 emissive: 0x66f2ff,
-                emissiveIntensity: 1.1,
+                emissiveIntensity: 1.2,
                 roughness: 0.08,
                 metalness: 0.7,
                 transparent: true,
@@ -784,7 +805,7 @@ class AtomVerse {
         );
         core.userData = {
             title: 'Electron Wave Core',
-            info: 'The electron core is a compact waveform packet, showing the sine-cosine wave structure inside the electron.'
+            info: this.getElectronWaveInfo()
         };
         core.visible = false;
         container.add(core);
@@ -870,6 +891,14 @@ class AtomVerse {
             new THREE.LineBasicMaterial({ color, transparent: true, opacity })
         );
         return ring;
+    }
+
+    getElectronWaveInfo() {
+        return 'Electron as a matter-wave obeys de Broglie:\n' +
+            'λ = h / p  where λ is wavelength and p is momentum.\n' +
+            'p = mv for non-relativistic mass m and velocity v.\n' +
+            'E = hν  where E is energy and ν is frequency.\n' +
+            'This wave structure represents the electron cloud and wave-particle duality.';
     }
 
     handleStructurePointerClick(event) {

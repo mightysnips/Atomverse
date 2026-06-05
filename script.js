@@ -658,21 +658,21 @@ class AtomVerse {
                 color: 0x5ce1e6,
                 position: [-18, 0, 0],
                 label: 'Electron',
-                detail: 'A fundamental lepton. Click to explore its energy core and wave structure.'
+                detail: 'A fundamental lepton representing a waveform string packet. Click to reveal the internal waveform structure.'
             },
             {
                 type: 'proton',
                 color: 0xff6eb0,
-                position: [14, 8, 0],
+                position: [14, 10, 0],
                 label: 'Proton',
-                detail: 'A baryon made of two up quarks and one down quark. Click to reveal the inner quark structure.'
+                detail: 'A baryon made of two up quarks and one down quark. Click to reveal all three internal quarks.'
             },
             {
                 type: 'neutron',
                 color: 0x7e88ff,
-                position: [14, -8, 0],
+                position: [14, -10, 0],
                 label: 'Neutron',
-                detail: 'A baryon made of one up quark and two down quarks. Click to reveal the inner quark structure.'
+                detail: 'A baryon made of one up quark and two down quarks. Click to reveal all three internal quarks.'
             }
         ];
 
@@ -740,10 +740,10 @@ class AtomVerse {
 
     buildElectronInternals(container, def) {
         const glowColor = new THREE.Color(0x94f7ff);
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
+        for (let i = 0; i < 3; i++) {
+            const angle = (i / 3) * Math.PI * 2;
             const fragment = new THREE.Mesh(
-                new THREE.SphereGeometry(1.1, 18, 18),
+                new THREE.SphereGeometry(1.25, 18, 18),
                 new THREE.MeshStandardMaterial({
                     color: 0x9dffff,
                     emissive: glowColor,
@@ -756,8 +756,8 @@ class AtomVerse {
             );
             fragment.position.set(Math.cos(angle) * 4.2, Math.sin(angle) * 4.2, 0);
             fragment.userData = {
-                title: `Electron Wavelet ${i + 1}`,
-                info: 'A glowing energy packet from the electron cloud, showing its quantum structure.'
+                title: `Electron Wave String ${i + 1}`,
+                info: 'A waveform string excitation from the electron cloud, showing the internal string-theory structure.'
             };
             fragment.visible = false;
             container.add(fragment);
@@ -777,8 +777,8 @@ class AtomVerse {
             })
         );
         core.userData = {
-            title: 'Electron Energy Core',
-            info: 'The electron viewed as a compact, glowing energy focus after the outer shell collapses.'
+            title: 'Electron Wave Core',
+            info: 'The electron core is a compact waveform packet, reflecting string-theory behavior inside the electron cloud.'
         };
         core.visible = false;
         container.add(core);
@@ -787,9 +787,9 @@ class AtomVerse {
 
     buildBaryonInternals(container, def) {
         const quarkOffsets = [
-            [0, 4, 0],
-            [-3.2, -3.2, 0],
-            [3.2, -3.2, 0]
+            [0, 4.8, 0],
+            [-4.2, -2.2, 0],
+            [4.2, -2.2, 0]
         ];
         const quarkColors = def.type === 'proton'
             ? [0xff9ec9, 0xff9ec9, 0xa54dff]
@@ -800,7 +800,7 @@ class AtomVerse {
 
         quarkOffsets.forEach((pos, index) => {
             const quark = new THREE.Mesh(
-                new THREE.SphereGeometry(2.4, 20, 20),
+                new THREE.SphereGeometry(2.8, 20, 20),
                 new THREE.MeshStandardMaterial({
                     color: quarkColors[index],
                     emissive: quarkColors[index],

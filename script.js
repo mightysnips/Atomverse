@@ -658,21 +658,21 @@ class AtomVerse {
                 color: 0x5ce1e6,
                 position: [-18, 0, 0],
                 label: 'Electron',
-                detail: 'A fundamental lepton representing a waveform string packet. Click to reveal the internal waveform structure.'
+                detail: 'A fundamental lepton that exists as a sine-cosine waveform packet. Click to reveal the wave structure inside the electron.'
             },
             {
                 type: 'proton',
                 color: 0xff6eb0,
                 position: [14, 10, 0],
                 label: 'Proton',
-                detail: 'A baryon made of two up quarks and one down quark. Click to reveal all three internal quarks.'
+                detail: 'A baryon made of two up quarks and one down quark, held together by gluons. Click to reveal the quarks and gluons inside.'
             },
             {
                 type: 'neutron',
                 color: 0x7e88ff,
                 position: [14, -10, 0],
                 label: 'Neutron',
-                detail: 'A baryon made of one up quark and two down quarks. Click to reveal all three internal quarks.'
+                detail: 'A baryon made of one up quark and two down quarks, bound by gluons. Click to reveal the quarks, charges, and gluon connections.'
             }
         ];
 
@@ -740,45 +740,51 @@ class AtomVerse {
 
     buildElectronInternals(container, def) {
         const glowColor = new THREE.Color(0x94f7ff);
-        for (let i = 0; i < 3; i++) {
-            const angle = (i / 3) * Math.PI * 2;
-            const fragment = new THREE.Mesh(
-                new THREE.SphereGeometry(1.25, 18, 18),
+        const waveformCount = 22;
+        const waveAmplitude = 2.4;
+        const waveSpacing = 0.5;
+        for (let i = 0; i < waveformCount; i++) {
+            const t = i * 0.25;
+            const x = (i - (waveformCount - 1) / 2) * waveSpacing;
+            const y = Math.sin(t * 1.4) * waveAmplitude;
+            const z = Math.cos(t * 1.4) * waveAmplitude * 0.35;
+            const segment = new THREE.Mesh(
+                new THREE.SphereGeometry(0.55, 12, 12),
                 new THREE.MeshStandardMaterial({
-                    color: 0x9dffff,
+                    color: 0x8cffff,
                     emissive: glowColor,
-                    emissiveIntensity: 0.8,
-                    roughness: 0.15,
-                    metalness: 0.5,
+                    emissiveIntensity: 0.75,
+                    roughness: 0.12,
+                    metalness: 0.3,
                     transparent: true,
                     opacity: 0.0
                 })
             );
-            fragment.position.set(Math.cos(angle) * 4.2, Math.sin(angle) * 4.2, 0);
-            fragment.userData = {
-                title: `Electron Wave String ${i + 1}`,
-                info: 'A waveform string excitation from the electron cloud, showing the internal string-theory structure.'
+            segment.position.set(x, y, z);
+            segment.userData = {
+                title: `Electron Wave Phase ${i + 1}`,
+                info: 'A sine-cosine waveform segment representing the electron wave packet inside the electron shell.'
             };
-            fragment.visible = false;
-            container.add(fragment);
-            this.subatomicMeshes.push(fragment);
+            segment.visible = false;
+            container.add(segment);
+            this.subatomicMeshes.push(segment);
         }
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(2.4, 24, 24),
+            new THREE.SphereGeometry(2.2, 28, 28),
             new THREE.MeshStandardMaterial({
                 color: 0x66f2ff,
                 emissive: 0x66f2ff,
-                emissiveIntensity: 0.9,
-                roughness: 0.12,
-                metalness: 0.6,
+                emissiveIntensity: 1.1,
+                roughness: 0.08,
+                metalness: 0.7,
                 transparent: true,
                 opacity: 0.0
             })
         );
         core.userData = {
             title: 'Electron Wave Core',
-            info: 'The electron core is a compact waveform packet, reflecting string-theory behavior inside the electron cloud.'
+            info: 'The electron core is a compact waveform packet, showing the sine-cosine wave structure inside the electron.'
         };
         core.visible = false;
         container.add(core);
@@ -799,6 +805,7 @@ class AtomVerse {
             : ['Up Quark', 'Down Quark', 'Down Quark'];
 
         quarkOffsets.forEach((pos, index) => {
+            const charge = quarkLabels[index] === 'Up Quark' ? '+2/3' : '-1/3';
             const quark = new THREE.Mesh(
                 new THREE.SphereGeometry(2.8, 20, 20),
                 new THREE.MeshStandardMaterial({
@@ -814,11 +821,40 @@ class AtomVerse {
             quark.position.set(pos[0], pos[1], pos[2]);
             quark.userData = {
                 title: `${quarkLabels[index]} (${def.label})`, 
-                info: `A glowing ${quarkLabels[index].toLowerCase()} inside the ${def.label.toLowerCase()} that becomes visible after expansion.`
+                info: `A ${quarkLabels[index].toLowerCase()} carrying charge ${charge} inside the ${def.label.toLowerCase()}.` 
+                    + ' It is held in place by gluon exchange.'
             };
             quark.visible = false;
             container.add(quark);
             this.subatomicMeshes.push(quark);
+        });
+
+        const gluonPositions = [
+            [(quarkOffsets[0][0] + quarkOffsets[1][0]) / 2, (quarkOffsets[0][1] + quarkOffsets[1][1]) / 2, 0],
+            [(quarkOffsets[1][0] + quarkOffsets[2][0]) / 2, (quarkOffsets[1][1] + quarkOffsets[2][1]) / 2, 0],
+            [(quarkOffsets[2][0] + quarkOffsets[0][0]) / 2, (quarkOffsets[2][1] + quarkOffsets[0][1]) / 2, 0]
+        ];
+        gluonPositions.forEach((pos, index) => {
+            const gluon = new THREE.Mesh(
+                new THREE.SphereGeometry(1.2, 14, 14),
+                new THREE.MeshStandardMaterial({
+                    color: 0xffd46b,
+                    emissive: 0xffc65d,
+                    emissiveIntensity: 0.9,
+                    roughness: 0.1,
+                    metalness: 0.2,
+                    transparent: true,
+                    opacity: 0.0
+                })
+            );
+            gluon.position.set(pos[0], pos[1], pos[2]);
+            gluon.userData = {
+                title: `Gluon (${def.label})`, 
+                info: 'A gluon carries the strong force that binds the quarks inside the baryon.'
+            };
+            gluon.visible = false;
+            container.add(gluon);
+            this.subatomicMeshes.push(gluon);
         });
     }
 
